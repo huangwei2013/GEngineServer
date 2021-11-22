@@ -1,22 +1,15 @@
 package main
 
 import (
-	"fmt"
 	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/net/ghttp"
-	"ruletest/service"
+	"ruletest/api"
+	"ruletest/foo"
+	"ruletest/service/rule/actions"
 	"ruletest/util"
 	"time"
 )
 
-type RuleConf struct {
-	RuleId      int64
-	RuleName    string
-	RuleContent string
-	RuleVersion string
-}
-
-var RuleConfsMap = make(map[int64]*RuleConf)
 
 const RuleStr string = `
 rule "测试规则名称1" "rule desc"
@@ -38,43 +31,34 @@ begin
 end
 `
 
-func initEPHandlers(s *ghttp.Server, RuleConfsMap map[int64]*RuleConf){
+var serverCtx = api.ServerContext{
+	StartAt: time.Now().Unix(),
+	Port: 8199,
+	RuleConfsMap: make(map[int64]*util.RuleConf),
+	ActionsMap: make(map[string]interface{}),
+}
+
+/**
+	最主要的麻烦之处...
+ */
+func initServerCtx (){
+
+	// NOTE: 实际场景，需要通过 Parser 解析 ruleStr 然后抽取对应字段，用于结构化内容生成
+
+	// Parser 时需入库，这里从库中读取即可
+	serverCtx.RuleConfsMap[1] = &util.RuleConf{1, "demo rule",RuleStr, "1"}
+
+	// 名称信息来自解析入库的内容，但示例相关代码，需要另外处理
+	serverCtx.ActionsMap["room"] = &actions.Room{}
+}
+
+func initEPHandlers(s *ghttp.Server){
 
 	s.BindHandler("/", func(r *ghttp.Request) {
-		r.Response.Write("哈喽世界！")
+		r.Response.Write("Welcome to GEngineServer！")
 	})
 
-	s.BindHandler("/engine/{TenantId}/{ProjectId}/{RuleId}/*RuleVersion/run", func(r *ghttp.Request) {
-		r.Response.Writeln("TenantId：",r.Get("TenantId"))
-		r.Response.Writeln("ProjectId：",r.Get("ProjectId"))
-		r.Response.Writeln("RuleId：",r.Get("RuleId"))
-		r.Response.Writeln("RuleVersion：",r.Get("RuleVersion"))
-
-		ruleId := r.GetInt64("RuleId")
-		rule := RuleConfsMap[ruleId]
-		if rule == nil{
-			util.SendRsp(r, 400, "Invalid RuleId")
-		}
-
-		ruleName := rule.RuleName
-		ruleStr := rule.RuleContent
-
-		apis := make(map[string]interface{})
-		apis["println"] = fmt.Println
-		apis["sleep"] = time.Sleep
-		engineService := service.NewEngineService(1, 2, 1, ruleStr, apis)
-
-		//调用
-		req := &service.Request{
-			Rid:       ruleId,
-			RuleNames: []string{ruleName},
-		}
-		response, e := engineService.Run(req)
-		if e != nil {
-			util.SendRsp(r, 400, fmt.Sprintf("Service Err : %+v", e))
-		}
-		util.SendRsp(r, 200, "", response[ruleName])
-	})
+	s.BindHandler("/engine/{TenantId}/{ProjectId}/{RuleId}/*RuleVersion/run", serverCtx.RuleRun)
 }
 
 
@@ -93,9 +77,10 @@ func main() {
 		"dumpRouterMap":    false,
 	})
 
-	// NOTE: 实际场景，需要通过 Parser 解析 ruleStr 然后抽取对应字段，用于结构化内容生成
-	RuleConfsMap[1] = &RuleConf{1, "demo rule",RuleStr, "1"}
+	initServerCtx()
+	initEPHandlers(s)
 
-	initEPHandlers(s, RuleConfsMap)
+	go foo.RunRaft(&serverCtx)
+
 	s.Run()
 }

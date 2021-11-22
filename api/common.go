@@ -1,19 +1,32 @@
-package util
+package api
 
 import (
+	"context"
 	"errors"
 	"net"
+	"ruletest/util"
 
 	"github.com/gogf/gf/encoding/gjson"
 	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/net/ghttp"
 )
 
+
+type Cluster struct {
+
+}
+
 type ServerContext struct {
 	StartAt int64
 	HostIP string
 	Port int
 	Server *ghttp.Server
+	Ctx context.Context
+	Cluster Cluster
+
+	RuleConfsMap map[int64]*util.RuleConf
+
+	ActionsMap map[string]interface{}
 }
 
 
