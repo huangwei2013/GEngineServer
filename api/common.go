@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"go.etcd.io/etcd/raft"
 	"net"
 	"ruletest/util"
 
@@ -24,9 +25,19 @@ type ServerContext struct {
 	Ctx context.Context
 	Cluster Cluster
 
-	RuleConfsMap map[int64]*util.RuleConf
+	Node *raft.Node
 
-	ActionsMap map[string]interface{}
+	// 需要动态维护的规则内容相关
+	RuleConfsMap     map[int]*util.RuleConf
+	RulesRunFuncsMap map[string]interface{}
+	RulesRunObjsMap  map[string]interface{}
+
+	// stop signals the run goroutine should shutdown.
+	stop chan struct{}
+	// stopping is closed by run goroutine on shutdown.
+	stopping chan struct{}
+	// done is closed when all goroutines from start() complete.
+	done chan struct{}
 }
 
 

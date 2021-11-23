@@ -42,14 +42,13 @@ func NewEngineService(poolMinLen, poolMaxLen int64, em int, rulesStr string, api
 }
 
 //service
-func (ms *EngineService) Run(req *Request, actionName string, action interface{}) (map[string]interface{}, error) {
+func (ms *EngineService) Run(req *Request) (map[string]interface{}, error) {
 	resp := &Response{}
 
 	//基于需要注入接口或数据,data这里最好仅注入与本次请求相关的结构体或数据，便于状态管理
 	data := make(map[string]interface{})
 	data["req"] = req
 	data["resp"] = resp
-	data[actionName] = action
 
 	e, res := ms.Pool.ExecuteSelectedRules(data, req.RuleNames)
 	if e != nil {

@@ -18,5 +18,5 @@ func RunRaft(serverCtx *api.ServerContext) {
 	}
 	peers := []raft.Peer{{ID: 0x01}}
 	n := raft.StartNode(c, peers)
-	n.Status()
+	serverCtx.Node = &n
 }
