@@ -9,6 +9,9 @@ import (
 	"ruletest/service/rule/actions"
 	"ruletest/util"
 	"time"
+
+	"github.com/coreos/etcd/raft/raftpb"
+
 )
 
 
@@ -38,6 +41,8 @@ var serverCtx = api.ServerContext{
 	RuleConfsMap:    make(map[int]*util.RuleConf),
 	RulesRunObjsMap: make(map[string]interface{}),
 	RulesRunFuncsMap: make(map[string]interface{}),
+
+	Recvc : make(chan raftpb.Message, 10),
 }
 
 /**

@@ -10,7 +10,7 @@ import (
 const Service_rules string = `
 rule "1" "1"
 begin
-	resp.At = room.GetAttention()
+	//resp.At = room.GetAttention()
 	println("rule 1...")
 end 
 
@@ -18,6 +18,7 @@ rule "2" "2"
 begin
 	resp.Num = room.GetNum()
 	println("rule 2...")
+	fmt.println("rule 2...")
 end
 `
 

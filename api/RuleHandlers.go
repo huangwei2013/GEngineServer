@@ -70,7 +70,7 @@ func (serverCtx *ServerContext) RuleAdd(r *ghttp.Request) {
 
 func (serverCtx *ServerContext) RuleGets(r *ghttp.Request) {
 
-	SendRsp(r, 200, "rule add successful", serverCtx.RuleConfsMap)
+	SendRsp(r, 200, "rule get successful", serverCtx.RuleConfsMap)
 }
 
 
@@ -84,7 +84,7 @@ func (serverCtx *ServerContext) RuleFuncsAdd(r *ghttp.Request) {
 	for k,v  := range ruleFuncsJson.Map(){
 		serverCtx.RulesRunFuncsMap[k] = v
 	}
-	SendRsp(r, 200, "rule add successful", serverCtx.RulesRunFuncsMap)
+	SendRsp(r, 200, "rule funcs add successful", serverCtx.RulesRunFuncsMap)
 }
 
 

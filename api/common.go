@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"errors"
+	"github.com/coreos/etcd/raft/raftpb"
 	"go.etcd.io/etcd/raft"
 	"net"
 	"ruletest/util"
@@ -26,6 +27,8 @@ type ServerContext struct {
 	Cluster Cluster
 
 	Node *raft.Node
+	Recvc chan raftpb.Message //从Stream消息通道中读取消息之后，会通过该通道将消息交给Raft接口，然后由它返回给底层etcd-raft模块进行处理。
+	Propc chan raftpb.Message //从Stream消息通道中读取到MsgProp类型的消息之后，会通过该通道将MsgProp消息交给Raft接口，然后由它返回给底层etcd-raft模块进行处理
 
 	// 需要动态维护的规则内容相关
 	RuleConfsMap     map[int]*util.RuleConf
@@ -33,11 +36,11 @@ type ServerContext struct {
 	RulesRunObjsMap  map[string]interface{}
 
 	// stop signals the run goroutine should shutdown.
-	stop chan struct{}
+	Stop chan struct{}
 	// stopping is closed by run goroutine on shutdown.
-	stopping chan struct{}
+	Stopping chan struct{}
 	// done is closed when all goroutines from start() complete.
-	done chan struct{}
+	Done chan struct{}
 }
 
 

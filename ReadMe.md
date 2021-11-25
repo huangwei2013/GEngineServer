@@ -15,7 +15,7 @@
 - [TODO] rule 中指定的对象/函数/方法集，如何管理
     - 运行上下文维护一个可执行的 对象/函数/方法全集，具体 rule 只是使用其中的指定 对象/函数/方法
 - [TODO] golang 目前支持的以下几种动态加载代码方式（对应 rule 中新增指定调用的对象/函数/方法）
-    - 通过 go plugin 方式，将要动态加载的代码，编译成 so，加载运行
+    - [通过 go plugin 方式]，将要动态加载的代码，编译成 so (linux)，加载运行(https://github.com/bilibili/gengine/wiki/%E9%AB%98%E7%BA%A7%E6%89%A9%E5%B1%95)
     - 通过网络远程调用/gRPC方式，在被调用端实现动态（即被调用端可采用重启等方式进行加载）
     - [goloader](https://github.com/dearplain/goloader)，利用mmap+go编译器来达到动态加载效果
 - [TODO] raft
@@ -46,3 +46,13 @@ gengine.DataContext.ExecMethod()
 两点不合理
 1、未在加载 rule 时校验/处理 函数是否满足
 2、仅考虑了对象的查找，对 module 的支持不完整
+
+## etcd 相关的依赖
+
+etcd的依赖关系有些坑，如：
+- 引用的 raft，和引用的 raftpb，是来自不同项目 
+
+```go
+	"github.com/coreos/etcd/raft/raftpb"
+	"go.etcd.io/etcd/raft"
+```
