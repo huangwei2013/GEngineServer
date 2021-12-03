@@ -37,24 +37,22 @@ func NewEngineService(poolMinLen, poolMaxLen int64, em int, rulesStr string, api
 		panic(fmt.Sprintf("初始化gengine失败，err:%+v", e))
 	}
 
-	myService := &EngineService{Pool: pool}
-	return myService
+	es := &EngineService{Pool: pool}
+	return es
 }
 
 //service
-func (ms *EngineService) Run(req *Request) (map[string]interface{}, error) {
+func (es *EngineService) Run(req *Request) (map[string]interface{}, error) {
 	resp := &Response{}
 
 	//基于需要注入接口或数据,data这里最好仅注入与本次请求相关的结构体或数据，便于状态管理
 	data := make(map[string]interface{})
 	data["req"] = req
 	data["resp"] = resp
-
-	e, res := ms.Pool.ExecuteSelectedRules(data, req.RuleNames)
+	e, res := es.Pool.ExecuteSelectedRules(data, req.RuleNames)
 	if e != nil {
 		println(fmt.Sprintf("pool execute rules error: %+v", e))
 		return nil, e
 	}
-
 	return res, nil
 }

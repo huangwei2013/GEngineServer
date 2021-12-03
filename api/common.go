@@ -3,43 +3,73 @@ package api
 import (
 	"context"
 	"errors"
+	"sync"
+
 	"github.com/coreos/etcd/raft/raftpb"
+	"go.etcd.io/etcd/client/v3"
 	"go.etcd.io/etcd/raft"
+
 	"net"
 	"ruletest/util"
 
 	"github.com/gogf/gf/encoding/gjson"
 	"github.com/gogf/gf/frame/g"
 	"github.com/gogf/gf/net/ghttp"
+
+	"google.golang.org/grpc"
 )
 
 
-type Cluster struct {
 
+type TenantRuleStatus int32
+const (
+	Rule_Reg     	TenantRuleStatus = 0 // no defined yet
+	Rule_Normal     TenantRuleStatus = 1 // working fine
+	Rule_Pending    TenantRuleStatus = 2 // to-be-offline/some other : no accept new request
+)
+
+
+type Tenant struct {
+	TenantId 	 int
+	RulesMap     map[int]TenantRuleStatus	// 对应 ServerContext.RuleConfsMap 中的 key
+
+	//RuleRuntimeConfsMap map[int]RuleRuntimeConf	// key：serverId, value: config for EnginePool on this server
 }
 
 type ServerContext struct {
+	ServerId int64
 	StartAt int64
 	HostIP string
 	Port int
 	Server *ghttp.Server
+	GrpcServer *grpc.Server
 	Ctx context.Context
-	Cluster Cluster
+	EctdClient *clientv3.Client
 
+	Mu sync.Mutex
+
+	// NOTE:从 etcd/raft 中将 raft+通讯部分剥离，暂时难度有点大（通讯部分耦合太多），改成直接使用完整 etcd
 	Node *raft.Node
 	Recvc chan raftpb.Message //从Stream消息通道中读取消息之后，会通过该通道将消息交给Raft接口，然后由它返回给底层etcd-raft模块进行处理。
 	Propc chan raftpb.Message //从Stream消息通道中读取到MsgProp类型的消息之后，会通过该通道将MsgProp消息交给Raft接口，然后由它返回给底层etcd-raft模块进行处理
 
 	// 需要动态维护的规则内容相关
-	RuleConfsMap     map[int]*util.RuleConf
-	RulesRunFuncsMap map[string]interface{}
-	RulesRunObjsMap  map[string]interface{}
+	UpdateAt int64
+	RuleVersion int
+	Ready chan int
 
-	// stop signals the run goroutine should shutdown.
+	// TODO：补充 last_update_version 等记录，优化 W/R 效率
+	RuleConfsMapUpdatedFlag bool
+	RuleConfsMap     map[int]*util.RuleConf
+	RulesRunFuncsMapUpdatedFlag bool
+	RulesRunFuncsMap map[string]interface{}
+	RulesRunObjsMapUpdatedFlag bool
+	RulesRunObjsMap  map[string]interface{}
+	TenantsUpdatedFlag bool
+	Tenants map[int]*Tenant
+
 	Stop chan struct{}
-	// stopping is closed by run goroutine on shutdown.
 	Stopping chan struct{}
-	// done is closed when all goroutines from start() complete.
 	Done chan struct{}
 }
 

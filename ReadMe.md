@@ -18,8 +18,8 @@
     - [通过 go plugin 方式]，将要动态加载的代码，编译成 so (linux)，加载运行(https://github.com/bilibili/gengine/wiki/%E9%AB%98%E7%BA%A7%E6%89%A9%E5%B1%95)
     - 通过网络远程调用/gRPC方式，在被调用端实现动态（即被调用端可采用重启等方式进行加载）
     - [goloader](https://github.com/dearplain/goloader)，利用mmap+go编译器来达到动态加载效果
-- [TODO] raft
-    - 准备借用 etcd-raft
+- etcd：通过etcd共享配置
+    - [TODO] 通过分布式锁获取写权限
 - [TODO] 节点任务分配
     - 考虑 etcd 中类似代码
 - [TODO] rule 模板 -- rule 字符串
@@ -55,4 +55,34 @@ etcd的依赖关系有些坑，如：
 ```go
 	"github.com/coreos/etcd/raft/raftpb"
 	"go.etcd.io/etcd/raft"
+```
+
+### 配置分布式维护流程
+
+```
+node管理
+    - 租约 和 续租约
+    
+ruleConf 管理
+    - 分布式 lock 写
+    - 每个 node 都建立 watch
+    - node 对其更新时，根据数据版本和锁来判断是否有权限
+  
+注册
+1.获取数据（包括版本）
+2.若1.ok，建立watch通道
+3.若2.ok，申请租约
+4.若3.ok，本地启动维护租约routine（更新周期=租约 1/3 TTL）
+  
+(被动)读
+1.watch 到变更
+2.读取数据
+3.合并到本地，合并失败则修改 node 状态为 latency
+
+(主动)写
+1.判定是否能获取锁：当前数据版本 vs 锁的版本
+2.若1.ok（当前数据版本 = 锁的版本），尝试获取锁
+3.若2.ok（获取到锁），获取数据，并判断当前数据版本是否等于锁的版本
+4.若3.ok，执行更新
+
 ```

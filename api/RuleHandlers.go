@@ -6,7 +6,6 @@ import (
 	"github.com/bilibili/gengine/context"
 	"github.com/gogf/gf/encoding/gjson"
 	"github.com/gogf/gf/net/ghttp"
-	"ruletest/service"
 	"ruletest/util"
 )
 
@@ -73,7 +72,6 @@ func (serverCtx *ServerContext) RuleGets(r *ghttp.Request) {
 	SendRsp(r, 200, "rule get successful", serverCtx.RuleConfsMap)
 }
 
-
 /**
  * NOTE：目前支持不了动态设定可用函数，该函数无用(参看 ReadMe.md)
  *
@@ -85,38 +83,4 @@ func (serverCtx *ServerContext) RuleFuncsAdd(r *ghttp.Request) {
 		serverCtx.RulesRunFuncsMap[k] = v
 	}
 	SendRsp(r, 200, "rule funcs add successful", serverCtx.RulesRunFuncsMap)
-}
-
-
-func (serverCtx *ServerContext) RuleRun(r *ghttp.Request) {
-
-	r.Response.Writeln("TenantId：",r.Get("TenantId"))
-	r.Response.Writeln("ProjectId：",r.Get("ProjectId"))
-	r.Response.Writeln("RuleId：",r.Get("RuleId"))
-	r.Response.Writeln("RuleVersion：",r.Get("RuleVersion"))
-
-	ruleId := r.GetInt("RuleId")
-	rule := serverCtx.RuleConfsMap[ruleId]
-	if rule == nil{
-		SendRsp(r, 400, "Error : Invalid RuleId")
-	}
-
-	ruleName := rule.RuleName
-	ruleStr := rule.RuleContent
-	apis := make(map[string]interface{})
-	for k,_ := range rule.RuleRunFuncsMap{
-		apis[k] = serverCtx.RulesRunFuncsMap[k]
-	}
-	engineService := service.NewEngineService(1, 2, 1, ruleStr, apis)
-
-	//调用
-	req := &service.Request{
-		Rid:       int64(ruleId),
-		RuleNames: []string{ruleName},
-	}
-	response, e := engineService.Run(req)
-	if e != nil {
-		SendRsp(r, 400, fmt.Sprintf("Error : Service Err : %+v", e))
-	}
-	SendRsp(r, 200, "", response[ruleName])
 }
